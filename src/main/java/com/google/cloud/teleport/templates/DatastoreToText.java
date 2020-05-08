@@ -22,6 +22,7 @@ import com.google.cloud.teleport.templates.common.JavascriptTextTransformer.Java
 import com.google.cloud.teleport.templates.common.JavascriptTextTransformer.TransformTextViaJavascript;
 import com.google.cloud.teleport.templates.common.TextConverters.FilesystemWriteOptions;
 import org.apache.beam.sdk.Pipeline;
+import org.apache.beam.sdk.io.Compression;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
@@ -67,7 +68,8 @@ public class DatastoreToText {
             .build())
         .apply(TextIO.write()
             .to(options.getTextWritePrefix())
-            .withSuffix(".json"));
+            .withSuffix(".json")
+            .withCompression(Compression.GZIP));
 
     pipeline.run();
   }
