@@ -21,6 +21,7 @@ import com.google.cloud.teleport.templates.common.DatastoreConverters.ReadJsonEn
 import com.google.cloud.teleport.templates.common.JavascriptTextTransformer.JavascriptTextTransformerOptions;
 import com.google.cloud.teleport.templates.common.JavascriptTextTransformer.TransformTextViaJavascript;
 import com.google.cloud.teleport.templates.common.TextConverters.FilesystemWriteOptions;
+import org.apache.beam.runners.dataflow.options.DataflowPipelineOptions;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.Compression;
 import org.apache.beam.sdk.io.TextIO;
@@ -38,6 +39,7 @@ public class DatastoreToText {
    * Custom PipelineOptions.
    */
   public interface DatastoreToTextOptions extends
+      DataflowPipelineOptions,
       PipelineOptions,
       DatastoreReadOptions,
       JavascriptTextTransformerOptions,
