@@ -22,6 +22,19 @@ having a replica table in BigQuery from your MySQL database.
 Note the [currently unsupported scenarios](#unsupported-scenarios) for
 this solution.
 
+### Upcoming Features
+
+We are working to improve the CDC solution. Please feel free to request a feature
+by filing an Issue in this repository. Also, if you are interested in any of
+the upcoming features, **please make sure to comment on their tracking issues**,
+so we can prioritize accordingly. Some planned improvements:
+
+* Multiplex out of a single PubSub topic [planned for Q2 2020](https://github.com/GoogleCloudPlatform/DataflowTemplates/issues/106)
+* Support for Postgres [planned for Q2 2020](https://github.com/GoogleCloudPlatform/DataflowTemplates/issues/95)
+* Support for SQL Server [planned for early Q3 2020](https://github.com/GoogleCloudPlatform/DataflowTemplates/issues/105)
+* Support for Avro serialization instead of Beam Row [currently in backlog](https://github.com/GoogleCloudPlatform/DataflowTemplates/issues/107)
+* Improve handling of Numeric, Time and Timestamp data types [currently backlog](https://github.com/GoogleCloudPlatform/DataflowTemplates/issues/108)
+
 ## Requirements
 
 - Java 8
@@ -93,6 +106,19 @@ basic configuration files:
     the password in the main properties file.
 - A credentials file with privileges to push to Cloud PubSub, and update Entries in
   Google Cloud Catalog in the `GOOGLE_DEFAULT_CREDENTIALS` environment variable.
+
+#### Passing parameters directly to Debezium
+
+You may want to pass parameters directly to the Debezium connector. Parameters
+such as the offset flush interval (Debezium's `offset.flush.interval.ms` property).
+To give parameters to the connector to be passed directly to Debezium, prefix
+them with `debezium.` in the properties file. For example, by adding the
+following line in the properties file, you can set the offset flush interval to
+500 miliseconds:
+
+```
+debezium.offset.flush.interval.ms=500
+```
 
 #### Deploying from source
 
@@ -261,3 +287,31 @@ This solution does not support a few particular scenarios:
   into BigQuery does **not** handle changes of schema. If you want to update the
   schema of one of your MySQL tables, it is a good idea to redeploy the Debezium
   connector, and the Dataflow pipeline.
+
+## Type Handling
+
+The template handles the conversion from MySQL types to BigQuery types based on
+Debezium-to-Beam Row type conversions, and from there to BigQuery. A valuable
+resource for this is Debezium's [MySQL connector type documentation](https://github.com/debezium/debezium/blob/1f6d53d13dd9ec1e51bb41bc7439dbbf5661bef7/documentation/modules/ROOT/partials/modules/cdc-mysql-connector/c_how-the-mysql-connector-maps-data-types.adoc).
+
+The solution ends up resolving types like this:
+
+| "Generic" Types  | MySQL Types  | BigQuery Types  | Notes |
+|---|---|---|---|
+| Integer types  | `TINYINT`,`BIGINT`,`INTEGER`, ...   | `INTEGER`  |  |
+| Float types  | `FLOAT`, `DOUBLE`  | `DOUBLE`  |   |
+| Byte types  |  `BINARY`, `VARBINARY`, `BLOB` | `BYTES` |  |
+| String types  |  `CHAR`, `VARCHAR`, `TEXT`, `ENUM` | `STRING` |  |
+| NUMERIC types  | `NUMERIC`, `DECIMAL`  | `STRING`  | Support for better conversion TBD. |
+| Time-related times  |  |  | Time-related types have specific type conversions. See detailed table below. |
+
+### Type handling for time-related types
+
+| Type  | MySQL Types  | BigQuery Types  | Notes |
+|---|---|---|---|
+| Timestamp  | `TIMESTAMP`  | `STRING`  | Support for better conversion TBD.  |
+| Year  | `YEAR`  | `INTEGER`  |   |
+| Time / time duration  | `TIME`  | `INTEGER`  | Translates a time into number of microseconds (since midnight).  |
+| Date  | `DATE`  | `INTEGER`  | Represents number of days since epoch. Better conversion TBD.  |
+| Datetime  | `DATETIME`  | `INTEGER`  | Represents number of microseconds since epoch. Better conversion TBD.  |
+
